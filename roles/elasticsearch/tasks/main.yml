@@ -1,0 +1,37 @@
+---
+# tasks file for elasticsearch
+- name: Install apt-transport-https
+  apt:
+    pkg: apt-transport-https
+    state: latest
+
+- name: Save repo
+  ansible.builtin.shell: echo "deb [trusted=yes] https://mirror.yandex.ru/mirrors/elastic/8/ stable main" | sudo tee /etc/apt/sources.list.d/elastic-8.x.list
+
+- name: Install elasticsearch
+  become: yes
+  apt:
+    name: elasticsearch
+    state: present
+    update_cache: true
+
+- name: Running elastic with systemd
+  ansible.builtin.shell: sudo /bin/systemctl daemon-reload && sudo /bin/systemctl enable elasticsearch.service
+
+- name: Ensure service is enabled
+  systemd:
+    name: "elasticsearch"
+    enabled: true
+    state: started
+
+- name: Setup yml
+  template:
+    src: elasticsearch.yml
+    dest: /etc/elasticsearch/elasticsearch.yml
+  notify:
+    - restart elasticsearch
+
+- name: Reset security settings
+  ansible.builtin.shell: sudo rm /etc/elasticsearch/elasticsearch.keystore && sudo /usr/share/elasticsearch/bin/elasticsearch-keystore create
+  notify:
+    - restart elasticsearch

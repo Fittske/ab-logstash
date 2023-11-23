@@ -1,0 +1,30 @@
+---
+# tasks file for logstash
+#- name: Add logstash apt key
+#  ansible.builtin.shell: wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo gpg --dearmor -o /usr/share/keyrings/elastic-keyring.gpg
+
+- name: Install apt-transport-https
+  apt:
+    pkg: apt-transport-https
+    state: latest
+
+- name: Save repo
+  ansible.builtin.shell: echo "deb [trusted=yes] https://mirror.yandex.ru/mirrors/elastic/8/ stable main" | sudo tee /etc/apt/sources.list.d/elastic-8.x.list
+
+- name: Install Logstash
+  apt:
+    name: logstash
+    state: present
+    update_cache: true
+  notify:
+    - restart logstash
+
+- name: Setup conf
+  template:
+    dest: /etc/logstash/conf.d/ab-logstash.conf
+    src: ab-logstash.conf
+    force: yes
+    mode: 0644
+  become: yes
+  notify:
+    - restart logstash
